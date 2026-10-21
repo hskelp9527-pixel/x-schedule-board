@@ -1,0 +1,32 @@
+{
+  "project": "X 发稿安排表",
+  "version": "1.0.0",
+  "features": [
+    {
+      "id": "schedule-notebook",
+      "status": "done-desktop",
+      "name": "时间记录与列表扫描"
+    },
+    {
+      "id": "account-backup",
+      "status": "done-desktop",
+      "name": "账号隔离与原子备份导入"
+    },
+    {
+      "id": "desktop-validation",
+      "status": "done-desktop",
+      "name": "桌面与小屏布局验证"
+    },
+    {
+      "id": "firefox-android",
+      "status": "pending-device",
+      "name": "Firefox 安卓真机验收与签名"
+    },
+    {
+      "id": "safari",
+      "status": "pending-signing",
+      "name": "Safari 转换与签名"
+    }
+  ],
+  "verification": "desktop-tests-passed; android-device-user-validation-pending"
+}

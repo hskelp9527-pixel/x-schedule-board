@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "X 发稿安排表",
+  "version": "1.0.0",
+  "description": "记录定时发稿时间，在 X 页面查看安排，并从 X 已加载的定时列表补录。",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_title": "打开 X 发稿安排表"
+  },
+  "background": {
+    "scripts": [
+      "model.js",
+      "background.js"
+    ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "x-schedule-board@hskelp9527-pixel.local",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "model.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
