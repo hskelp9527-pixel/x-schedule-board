@@ -41,7 +41,8 @@ try {
   await page.locator('#x-schedule-board .close').click();
   await page.locator('[data-xms-launcher]').click();
   await page.frameLocator('iframe[title="记得 @ 收藏"]').locator('#search').fill('查找收藏');
-  await page.frameLocator('iframe[title="记得 @ 收藏"]').locator('#search').press('Escape');
+  await page.frameLocator('iframe[title="记得 @ 收藏"]').locator('#search').focus();
+  await page.keyboard.press('Escape');
   await page.locator('[data-xms-panel]').waitFor({ state: 'detached' });
   assert.equal(await page.locator('[data-testid=tweetTextarea_0]').textContent(), '保留原有草稿');
   await page.setViewportSize({ width: 360, height: 740 });

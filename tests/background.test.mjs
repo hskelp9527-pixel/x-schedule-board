@@ -4,14 +4,14 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 function setup() {
-  let listener, state = { entries: [], scans: [], clocks: [] };
-  const api = { runtime: { id: 'trusted', onMessage: { addListener(fn) { listener = fn; } } }, action: { onClicked: { addListener() {} } }, storage: { local: {
+  let listener, state = { entries: [], scans: [], clocks: [] }; const opened = [];
+  const api = { tabs: { async create(options) { opened.push(options); return { id: 2 }; } }, runtime: { id: 'trusted', onMessage: { addListener(fn) { listener = fn; } } }, action: { onClicked: { addListener() {} } }, storage: { local: {
     async get() { await new Promise(r => setTimeout(r, 1)); return structuredClone(state); },
     async set(value) { state = structuredClone(value); }
   } } };
   const context = vm.createContext({ chrome: api, Date, URL, crypto: webcrypto });
   for (const file of ['model.js', 'background.js']) vm.runInContext(readFileSync(new URL('../' + file, import.meta.url), 'utf8'), context);
-  return { call: (message, sender = { id: 'trusted', tab: { id: 1 }, url: 'https://x.com/home' }) => new Promise(resolve => { if (listener(message, sender, resolve) !== true) resolve(undefined); }), state: () => state };
+  return { opened, call: (message, sender = { id: 'trusted', tab: { id: 1 }, url: 'https://x.com/home' }) => new Promise(resolve => { if (listener(message, sender, resolve) !== true) resolve(undefined); }), state: () => state };
 }
 test('rejects foreign senders and serializes concurrent writes across tabs', async () => {
   const app = setup();
@@ -22,6 +22,13 @@ test('rejects foreign senders and serializes concurrent writes across tabs', asy
   const before = JSON.stringify(app.state());
   const invalid = await app.call({ type: 'import', account: 'me', payload: { format: 'x-schedule-board', version: 1, entries: [{ id: 'broken' }] } });
   assert.equal(invalid.ok, false); assert.equal(JSON.stringify(app.state()), before);
+});
+test('first scan opens the known X list in a new tab without touching existing tab', async () => {
+  const app=setup(), before=JSON.stringify(app.state());
+  const result=await app.call({type:'open-list',account:'me'});
+  assert.equal(result.ok,true);assert.equal(app.opened.length,1);
+  assert.equal(app.opened[0].url,'https://x.com/compose/post/unsent/scheduled');
+  assert.equal(JSON.stringify(app.state()),before);
 });
 test('late snapshots and mutations cannot roll back newer X changes', async () => {
   const app = setup(), t = Date.now(), at = Date.now() + 100000;

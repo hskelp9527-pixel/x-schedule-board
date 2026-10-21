@@ -6,12 +6,13 @@ function trusted(sender) {
   try { return ['https://x.com', 'https://twitter.com'].includes(new URL(sender.url).origin); } catch { return false; }
 }
 api.runtime.onMessage.addListener((message, sender, respond) => {
-  if (!trusted(sender) || !['list', 'manual', 'network', 'remove', 'import'].includes(message?.type)) return;
+  if (!trusted(sender) || !['list', 'manual', 'network', 'remove', 'import', 'open-list'].includes(message?.type)) return;
   const work = queue.then(async () => {
     const owner = XSB.account(message.account);
     const saved = await api.storage.local.get({ entries: [], scans: [], clocks: [] });
     if (!Array.isArray(saved.entries) || !Array.isArray(saved.scans)) throw new Error('存储数据无法读取，请先备份');
     let entries = saved.entries, scans = saved.scans, clocks = saved.clocks ?? [], recognized = false;
+    if (message.type === 'open-list') await api.tabs.create({ url: 'https://x.com/compose/post/unsent/scheduled' });
     if (message.type === 'manual') entries = XSB.manual(entries, owner, message.at, message.text, message.id);
     if (message.type === 'remove') entries = entries.filter(e => e.account !== owner || e.id !== message.id);
     if (message.type === 'import') entries = XSB.importBackup(entries, message.payload);
@@ -39,7 +40,7 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
         }
       }
     }
-    if (message.type !== 'list') await api.storage.local.set({ entries, scans, clocks });
+    if (!['list', 'open-list'].includes(message.type)) await api.storage.local.set({ entries, scans, clocks });
     return { ok: true, recognized, entries: entries.filter(e => e.account === owner), scan: scans.find(s => s.account === owner) ?? null };
   });
   queue = work.catch(() => {});

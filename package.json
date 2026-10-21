@@ -1,6 +1,6 @@
 {
   "name": "x-schedule-board",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "commonjs",
   "description": "A local schedule notebook that passively reads X's own scheduled-post list.",
@@ -11,5 +11,7 @@
     "test:integration": "node scripts/verify-suite.mjs",
     "check": "node --check model.js && node --check hook.js && node --check background.js && node --check content.js && node scripts/check-manifests.mjs"
   },
-  "devDependencies": { "playwright-core": "1.61.1" }
+  "devDependencies": {
+    "playwright-core": "1.61.1"
+  }
 }

@@ -1,11 +1,9 @@
-# 验收边界
+# 验收记录
 
-最低目标 8/10：核心功能 3、数据迁移 2、桌面与手机 2、异常并发 2、交付文档 1。关键数据丢失、假称定时成功或虚报手机兼容不得通过。
+本次由用户自行处理手机验收，当前重点为桌面。新界面无手动时间表单、不修改原 X 日期对话框；默认小挂件，点击展开紧凑时间清单。
 
-自动化覆盖手动记录、去重、从真实观察到的空列表 envelope 与模拟非空列表解析、时间单位、非法日期、未知格式、跨账号隔离、消息发送方限制、并发写入、导入原子性、X 按钮、小屏不溢出和摘要安全显示。
+主 Agent 通过7项逻辑/后台测试，成功定时后自动记录、失败忽略、空列表/未知格式保护、跨账号隔离、延迟请求排序，以及浏览器中的 fetch/XHR 列表捕获与直接只读刷新、取消保留历史、备份和小尺寸断言。三个真实扩展同时加载的模拟 X 集成通过。
 
-只读实站调查确认 X 使用 scheduleOption、scheduledConfirmationPrimaryAction 与 aria-labelledby 日期选项，已安排入口为 /compose/post/unsent/scheduled，FetchScheduledTweets 返回 data.viewer.scheduled_tweet_list。调查账号当时列表为空，未创建或删除真实定时帖。
+真实 X 已只读确认 scheduleOption、scheduledConfirmationPrimaryAction、预排期列表入口 /compose/post/unsent/scheduled 和 FetchScheduledTweets 的 data.viewer.scheduled_tweet_list 空数组结构。未替用户创建测试帖，真实非空/改期/取消结果仍需实际使用核对。
 
-待真实账号验证非空列表/新建/改期/取消响应。待 Android Firefox 真机或模拟器检查安装、MAIN world 观察、触摸、软键盘和页面切换。Firefox unsigned 包需通过 Mozilla 签名才能正式分发；可用 web-ext run -t firefox-android 做开发加载，不得在未连接设备时宣称通过。Safari 等待转换签名与 iPhone 验证。
-
-最终集中测试结果与独立审查分数在 progress.md 记录。
+Firefox已准备独立清单/未签名包，设备验收由用户后续处理。Safari是转换源而非已签名应用。正式签名或设备验收未完成时不得声称手机已全面通过。
