@@ -2,7 +2,7 @@
 // Credentials stay inside the page closure; no headers/cookies reach extension storage.
 (() => {
   const watched = value => /\/(FetchScheduledTweets|CreateScheduledTweet|EditScheduledTweet|UpdateScheduledTweet|DeleteScheduledTweet)$/.test(String(value).split('?')[0]);
-  const owner = () => document.querySelector('a[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href')?.split('/')[1]?.toLowerCase() ?? '';
+  const owner = () => globalThis.XSBIdentity.current();
   let ready = false;
   let listTemplate = null, scanning = false, scanAgain = false;
   let lastOrder = 0;

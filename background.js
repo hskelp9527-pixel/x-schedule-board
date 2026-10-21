@@ -11,7 +11,7 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
     const owner = XSB.account(message.account);
     const saved = await api.storage.local.get({ entries: [], scans: [], clocks: [] });
     if (!Array.isArray(saved.entries) || !Array.isArray(saved.scans)) throw new Error('存储数据无法读取，请先备份');
-    let entries = saved.entries, scans = saved.scans, clocks = saved.clocks ?? [], recognized = false;
+    let entries = saved.entries, scans = saved.scans, clocks = saved.clocks ?? [], recognized = false, ignored = false;
     if (message.type === 'open-list') await api.tabs.create({ url: 'https://x.com/compose/post/unsent/scheduled' });
     if (message.type === 'manual') entries = XSB.manual(entries, owner, message.at, message.text, message.id);
     if (message.type === 'remove') entries = entries.filter(e => e.account !== owner || e.id !== message.id);
@@ -21,12 +21,14 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
       if (!event || event.account !== owner || typeof event.text !== 'string' || event.text.length > 2e6) throw new Error('扫描数据不完整');
       const parsed = XSB.networkEvent(event);
       if (parsed) {
+        recognized = true;
         const requestedAt = event.requestedAt;
         if (!Number.isFinite(requestedAt) || requestedAt < Date.now() - 86400000 || requestedAt > Date.now() + 60000) throw new Error('扫描请求缺少有效顺序，请刷新 X 页面');
         const clock = clocks.find(c => c.account === owner) ?? { account: owner, snapshotAt: 0, mutationAt: 0, items: [] };
         const id = parsed.id ?? parsed.records?.[0]?.id;
         const itemAt = clock.items.find(c => c.id === id)?.at ?? 0;
         const stale = parsed.type === 'snapshot' ? requestedAt <= clock.mutationAt || requestedAt < clock.snapshotAt : requestedAt < Math.max(itemAt, clock.snapshotAt);
+        ignored = stale;
         if (!stale) {
           entries = XSB.applyEvent(entries, parsed); recognized = true;
           if (parsed.type === 'snapshot') {
@@ -41,7 +43,7 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
       }
     }
     if (!['list', 'open-list'].includes(message.type)) await api.storage.local.set({ entries, scans, clocks });
-    return { ok: true, recognized, entries: entries.filter(e => e.account === owner), scan: scans.find(s => s.account === owner) ?? null };
+    return { ok: true, recognized, ignored, entries: entries.filter(e => e.account === owner), scan: scans.find(s => s.account === owner) ?? null };
   });
   queue = work.catch(() => {});
   work.then(respond, error => respond({ ok: false, error: error.message }));

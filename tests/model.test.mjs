@@ -48,6 +48,27 @@ test('only recognized success responses confirm creation or deletion', () => {
   assert.equal(M.networkEvent(failed), null);
   assert.equal(M.networkEvent(event('DeleteScheduledTweet', { scheduled_tweet_delete: { success: false } }, { scheduled_tweet_id: '3' })), null);
 });
+
+test('reads the current X scheduling_info and tweet_create_request list shape', () => {
+  const parsed=M.networkEvent(event('FetchScheduledTweets',{viewer:{scheduled_tweet_list:[{
+    __typename:'ScheduledTweet',rest_id:'73',scheduling_info:{execute_at:future/1000,state:'Scheduled'},
+    tweet_create_request:{type:'PostTweetRequest',status:'当前 X 定时正文'}
+  }]}}));
+  assert.ok(parsed,'current nonempty list must be recognized');
+  assert.equal(parsed.records[0].at,Math.round(future));
+  assert.equal(parsed.records[0].text,'当前 X 定时正文');
+  assert.equal(parsed.records[0].id,'x:73');
+});
+
+test('records the current X data.tweet creation confirmation using submitted time', () => {
+  const variables={execute_at:future/1000,post_tweet_request:{status:'刚安排的稿子'}};
+  const parsed=M.networkEvent(event('CreateScheduledTweet',{tweet:{rest_id:'74'}},variables));
+  assert.ok(parsed,'X data.tweet success must auto-record without a list scan');
+  assert.equal(parsed.records[0].at,Math.round(future));
+  assert.equal(parsed.records[0].text,'刚安排的稿子');
+  assert.equal(parsed.records[0].id,'x:74');
+  assert.equal(M.networkEvent(event('CreateScheduledTweet',{tweet:null},variables)),null);
+});
 test('backup validates the complete document before merging', () => {
   const entries = [record('x:1')];
   const payload = { format: 'x-schedule-board', version: 1, entries: [record('x:2'), { id: 'broken' }] };

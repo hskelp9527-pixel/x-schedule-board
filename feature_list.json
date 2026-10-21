@@ -1,6 +1,6 @@
 {
   "project": "X 发稿安排表",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "features": [
     {
       "id": "schedule-notebook",
@@ -26,6 +26,16 @@
       "id": "safari",
       "status": "pending-signing",
       "name": "Safari 转换与签名"
+    },
+    {
+      "id": "current-x-schedule-schema",
+      "status": "done-desktop",
+      "name": "当前X嵌套列表和创建响应兼容"
+    },
+    {
+      "id": "standalone-scheduled-page",
+      "status": "done-desktop",
+      "name": "无侧栏列表页身份和扫描"
     }
   ],
   "verification": "desktop-tests-passed; android-device-user-validation-pending"

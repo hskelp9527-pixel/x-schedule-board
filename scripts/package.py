@@ -4,7 +4,7 @@ import json
 import zipfile
 
 root = Path(__file__).resolve().parents[1]
-runtime = ['model.js', 'background.js', 'hook.js', 'content.js', 'README.md', 'LICENSE']
+runtime = ['identity.js', 'model.js', 'background.js', 'hook.js', 'content.js', 'README.md', 'LICENSE']
 version = json.loads((root / 'package.json').read_text(encoding='utf-8'))['version']
 out = root / 'dist'
 out.mkdir(exist_ok=True)

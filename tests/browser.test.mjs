@@ -12,16 +12,17 @@ const edge='C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const at=Date.now()+86400000*2;
 let snapshot=[], nextId=11, listReads=0, context;
 const html='<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:24px;font:16px system-ui;background:white"><a data-testid="AppTabBar_Profile_Link" href="/me">个人资料</a><h1>模拟 X · 自动记录定时稿</h1><div data-testid="tweetTextarea_0" contenteditable="true">保留原草稿</div><div data-testid="toolBar"><button data-testid="scheduleOption">X 定时按钮</button></div></body></html>';
+const standaloneHtml='<!doctype html><html><meta charset="utf-8"><script>window.__INITIAL_STATE__={"session":{"user_id":"1"},"entities":{"users":{"entities":{"1":{"screen_name":"Me"}}}}};window.__INITIAL_STATE__=undefined;document.addEventListener("DOMContentLoaded",()=>fetch("/i/api/graphql/test/FetchScheduledTweets"));</script><body><h1>Scheduled · 独立列表，没有侧栏</h1></body></html>';
 try{
   context=await chromium.launchPersistentContext(profile,{executablePath:process.env.BROWSER_PATH||(existsSync(edge)?edge:chromium.executablePath()),headless:true,ignoreDefaultArgs:['--disable-extensions'],args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],viewport:{width:1100,height:800}});
   const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');
-  await context.route('https://x.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:html}));
+  await context.route('https://x.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:new URL(route.request().url()).pathname==='/compose/post/unsent/scheduled'?standaloneHtml:html}));
   await context.route('https://x.com/i/api/graphql/test/FetchScheduledTweets',route=>{listReads++;return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{viewer:{scheduled_tweet_list:snapshot}}})});});
   await context.route('https://x.com/i/api/graphql/test/CreateScheduledTweet',route=>{
     const v=JSON.parse(route.request().postData()).variables;
     if(v.post_tweet_request.status==='FAIL')return route.fulfill({contentType:'application/json',body:JSON.stringify({errors:[{message:'failed'}]})});
-    const id=String(nextId++);snapshot.push({rest_id:id,execute_at:v.execute_at,tweet_request:v.post_tweet_request});
-    return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{scheduled_tweet_create:{rest_id:id}}})});
+    const id=String(nextId++);snapshot.push({rest_id:id,scheduling_info:{execute_at:v.execute_at,state:'Scheduled'},tweet_create_request:{type:'PostTweetRequest',...v.post_tweet_request}});
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{tweet:{rest_id:id}}})});
   });
   await context.route('https://x.com/i/api/graphql/test/DeleteScheduledTweet',route=>{const v=JSON.parse(route.request().postData()).variables;snapshot=snapshot.filter(e=>e.rest_id!==v.scheduled_tweet_id);return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{scheduled_tweet_delete:true}})});});
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('https://x.com/home');
@@ -46,12 +47,12 @@ try{
   const rect=await board.locator('.panel').boundingBox();assert(rect.width<=252&&rect.height<=320);
   await page.evaluate(()=>fetch('/i/api/graphql/test/FetchScheduledTweets'));
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.status').textContent==='已刷新');
-  snapshot[0].tweet_request.status='从接口刷新后的内容';
+  snapshot[0].tweet_create_request.status='从接口刷新后的内容';
   const before=listReads;await board.locator('.refresh').click();
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.list').textContent.includes('从接口刷新后的内容'));
   assert(listReads>before,'refresh replays X own captured GET, no manual time entry');assert.equal(new URL(page.url()).pathname,'/home');
   await page.evaluate(()=>new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET','/i/api/graphql/test/FetchScheduledTweets');xhr.setRequestHeader('x-test-list','yes');xhr.onload=resolve;xhr.onerror=reject;xhr.send();}));
-  snapshot[0].tweet_request.status='XHR 列表也可直接刷新';
+  snapshot[0].tweet_create_request.status='XHR 列表也可直接刷新';
   await board.locator('.refresh').click();
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.list').textContent.includes('XHR 列表也可直接刷新'));
   await create('FAIL');await page.waitForTimeout(200);assert.equal((await worker.evaluate(()=>chrome.storage.local.get('entries'))).entries.length,1);
@@ -64,6 +65,12 @@ try{
   await board.locator('.menu').click();await page.screenshot({path:join(output,'desktop.png')});
   await page.setViewportSize({width:360,height:740});await page.screenshot({path:join(output,'mobile.png')});
   const narrow=await board.locator('.panel').boundingBox();assert(narrow.x>=0&&narrow.x+narrow.width<=361);
+  const standalone=await context.newPage();await standalone.goto('https://x.com/compose/post/unsent/scheduled');
+  await standalone.waitForFunction(()=>document.querySelector('#x-schedule-board')?.shadowRoot.querySelectorAll('.item').length===1);
+  assert.equal(await standalone.locator('[data-testid=AppTabBar_Profile_Link]').count(),0);
+  assert.match(await standalone.locator('#x-schedule-board .owner').textContent(),/^@me /);
+  assert.match(await standalone.locator('#x-schedule-board .list').textContent(),/第二篇/);
+  await standalone.close();await page.bringToFront();
   await page.evaluate(()=>document.querySelector('[data-testid=AppTabBar_Profile_Link]').setAttribute('href','/other'));
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.owner').textContent.startsWith('@other'));
   assert.equal(await board.locator('.item').count(),0);assert.equal(await page.locator('[data-testid=tweetTextarea_0]').textContent(),'保留原草稿');

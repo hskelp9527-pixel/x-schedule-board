@@ -37,7 +37,9 @@ test('late snapshots and mutations cannot roll back newer X changes', async () =
   } });
   const variables = { execute_at: at / 1000, post_tweet_request: { status: '安排' } };
   await send('CreateScheduledTweet', t + 1, { scheduled_tweet_create: { rest_id: '1' } }, variables);
-  await send('FetchScheduledTweets', t, { viewer: { scheduled_tweet_list: [] } });
+  const staleSnapshot=await send('FetchScheduledTweets', t, { viewer: { scheduled_tweet_list: [] } });
+  assert.equal(staleSnapshot.recognized,true,'a safely ignored older response is still a recognized format');
+  assert.equal(staleSnapshot.ignored,true);
   assert.equal(app.state().entries[0].present, true);
   await send('DeleteScheduledTweet', t + 3, { scheduled_tweet_delete: true }, { scheduled_tweet_id: '1' });
   await send('FetchScheduledTweets', t + 2, { viewer: { scheduled_tweet_list: [{ rest_id: '1', execute_at: at / 1000, tweet_request: { status: '安排' } }] } });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X 发稿安排表",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "记录定时发稿时间，在 X 页面查看安排，并从 X 已加载的定时列表补录。",
   "permissions": [
     "storage"
@@ -36,6 +36,7 @@
         "https://twitter.com/*"
       ],
       "js": [
+        "identity.js",
         "hook.js"
       ],
       "run_at": "document_start",
@@ -47,6 +48,7 @@
         "https://twitter.com/*"
       ],
       "js": [
+        "identity.js",
         "model.js",
         "content.js"
       ],

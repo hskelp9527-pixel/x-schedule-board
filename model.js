@@ -46,9 +46,9 @@ globalThis.XSB = (() => {
   }
   function scheduledRecord(node, owner) {
     if (!node || typeof node !== 'object') return null;
-    const at = node.execute_at ?? node.scheduled_at ?? node.scheduled_time;
+    const at = node.scheduling_info?.execute_at ?? node.execute_at ?? node.scheduled_at ?? node.scheduled_time;
     const id = node.rest_id ?? node.scheduled_tweet_id ?? node.id;
-    const request = node.tweet_request ?? node.post_tweet_request ?? node;
+    const request = node.tweet_create_request ?? node.tweet_request ?? node.post_tweet_request ?? node;
     if (at == null || id == null) return null;
     try { return validEntry({ id: `x:${id}`, account: owner, at: timestamp(at), text: text(request.status ?? request.tweet_text ?? node.text), source: 'x', present: true, updatedAt: Date.now() }); } catch { return null; }
   }
@@ -68,7 +68,7 @@ globalThis.XSB = (() => {
       return { type: 'snapshot', owner, records };
     }
     if (['CreateScheduledTweet', 'EditScheduledTweet', 'UpdateScheduledTweet'].includes(operation)) {
-      const node = response.data.scheduled_tweet_create ?? response.data.scheduled_tweet_update ?? response.data.scheduled_tweet_edit;
+      const node = response.data.tweet ?? response.data.scheduled_tweet_create ?? response.data.scheduled_tweet_update ?? response.data.scheduled_tweet_edit;
       if (!node || typeof node !== 'object') return null;
       const record = scheduledRecord({ ...variables, ...node }, owner);
       return record ? { type: 'upsert', owner, records: [record] } : null;

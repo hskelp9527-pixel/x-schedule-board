@@ -23,7 +23,7 @@
   document.body.append(host);
   const $ = s => root.querySelector(s);
   let owner = '', entries = [], scan = null, scanPending = false;
-  const currentOwner = () => document.querySelector('a[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href')?.split('/')[1]?.toLowerCase() ?? '';
+  const currentOwner = () => globalThis.XSBIdentity.current();
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   function status(message, error = false) { $('.status').textContent = message; $('.status').classList.toggle('error', error); }
   async function request(type, extra = {}) {
@@ -75,7 +75,7 @@
   new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(refreshOwner,120);}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href']});
   document.addEventListener('xsb:net',e=>{
     try{if(typeof e.detail!=='string'||e.detail.length>2100000)return;const event=JSON.parse(e.detail);if(event.account!==currentOwner())return;
-      request('network',{event}).then(r=>{scanPending=false;if(r.recognized){const op=new URL(event.url).pathname.split('/').pop();status(op==='FetchScheduledTweets'?'已刷新':op==='DeleteScheduledTweet'?'已更新安排':'已自动记录定时稿');}else status('未识别本次 X 返回，原记录保留；点 ↻ 核对列表',true);}).catch(error=>status(error.message,true));
+      request('network',{event}).then(r=>{if(r.ignored)return;scanPending=false;if(r.recognized){const op=new URL(event.url).pathname.split('/').pop();status(op==='FetchScheduledTweets'?'已刷新':op==='DeleteScheduledTweet'?'已更新安排':'已自动记录定时稿');}else status('未识别本次 X 返回，原记录保留；点 ↻ 核对列表',true);}).catch(error=>status(error.message,true));
     }catch{/* untrusted page event */}
   });
   api.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&(changes.entries||changes.scans))request('list').catch(()=>{});});
