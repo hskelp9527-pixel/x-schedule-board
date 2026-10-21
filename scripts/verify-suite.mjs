@@ -39,6 +39,7 @@ try {
   });
   assert(hit, 'schedule panel must not be obscured by the rings');
   await page.locator('#x-schedule-board .close').click();
+  await page.bringToFront();
   await page.locator('[data-xms-launcher]').click();
   await page.frameLocator('iframe[title="记得 @ 收藏"]').locator('#search').fill('查找收藏');
   await page.frameLocator('iframe[title="记得 @ 收藏"]').locator('#search').focus();
