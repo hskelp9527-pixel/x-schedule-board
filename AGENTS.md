@@ -6,6 +6,7 @@
 - Chrome MV3 与 Firefox 使用独立清单。Safari 源可转换，但未经签名和实机验证不能称为可安装版本。
 - 只自动记录 X 成功提交的定时稿，不要求额外点击记录；时间经过不等于已经发布；列表缺失不等于已取消。
 - 界面保持紧凑的小按钮，点击才展开时间清单；不改变 X 原有布局，不在日期表单增加记录按钮。
+- 小挂件和展开面板标题栏可拖动，松手后单独保存位置；拖动不误触点击，展开/视口变化后始终保持可见。
 - 按账号隔离；所有存储写入由 background 排队；备份先完整验证再写入。
 - 主 Agent 集中运行 npm test、npm run test:browser、npm run check 和 python scripts/package.py。
 - 变更同步版本、CHANGELOG、progress.md 和 feature_list.json。子 Agent 不运行测试或构建。

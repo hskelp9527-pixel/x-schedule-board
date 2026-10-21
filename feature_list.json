@@ -1,6 +1,6 @@
 {
   "project": "X 发稿安排表",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "features": [
     {
       "id": "schedule-notebook",
@@ -36,6 +36,11 @@
       "id": "standalone-scheduled-page",
       "status": "done-desktop",
       "name": "无侧栏列表页身份和扫描"
+    },
+    {
+      "id": "draggable-widget",
+      "status": "done-desktop",
+      "name": "小钟表和标题栏拖动、本机位置记忆、可见视口边界"
     }
   ],
   "verification": "desktop-tests-passed; android-device-user-validation-pending"

@@ -6,8 +6,18 @@ function trusted(sender) {
   try { return ['https://x.com', 'https://twitter.com'].includes(new URL(sender.url).origin); } catch { return false; }
 }
 api.runtime.onMessage.addListener((message, sender, respond) => {
-  if (!trusted(sender) || !['list', 'manual', 'network', 'remove', 'import', 'open-list'].includes(message?.type)) return;
+  if (!trusted(sender) || !['list', 'manual', 'network', 'remove', 'import', 'open-list', 'get-position', 'set-position'].includes(message?.type)) return;
   const work = queue.then(async () => {
+    if(['get-position','set-position'].includes(message.type)){
+      const valid=p=>p&&['x','y'].every(key=>Number.isFinite(p[key])&&p[key]>=0&&p[key]<=1);
+      if(message.type==='set-position'){
+        if(!valid(message.position))throw new Error('挂件位置无效');
+        const position={x:message.position.x,y:message.position.y};
+        await api.storage.local.set({position});return {ok:true,position};
+      }
+      const {position}=await api.storage.local.get({position:null});
+      return {ok:true,position:valid(position)?{x:position.x,y:position.y}:null};
+    }
     const owner = XSB.account(message.account);
     const saved = await api.storage.local.get({ entries: [], scans: [], clocks: [] });
     if (!Array.isArray(saved.entries) || !Array.isArray(saved.scans)) throw new Error('存储数据无法读取，请先备份');

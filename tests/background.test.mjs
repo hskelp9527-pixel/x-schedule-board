@@ -7,7 +7,7 @@ function setup() {
   let listener, state = { entries: [], scans: [], clocks: [] }; const opened = [];
   const api = { tabs: { async create(options) { opened.push(options); return { id: 2 }; } }, runtime: { id: 'trusted', onMessage: { addListener(fn) { listener = fn; } } }, action: { onClicked: { addListener() {} } }, storage: { local: {
     async get() { await new Promise(r => setTimeout(r, 1)); return structuredClone(state); },
-    async set(value) { state = structuredClone(value); }
+    async set(value) { state = { ...state, ...structuredClone(value) }; }
   } } };
   const context = vm.createContext({ chrome: api, Date, URL, crypto: webcrypto });
   for (const file of ['model.js', 'background.js']) vm.runInContext(readFileSync(new URL('../' + file, import.meta.url), 'utf8'), context);
@@ -29,6 +29,20 @@ test('first scan opens the known X list in a new tab without touching existing t
   assert.equal(result.ok,true);assert.equal(app.opened.length,1);
   assert.equal(app.opened[0].url,'https://x.com/compose/post/unsent/scheduled');
   assert.equal(JSON.stringify(app.state()),before);
+});
+
+test('widget position persists independently from account records and rejects invalid coordinates',async()=>{
+  const app=setup(),initial=await app.call({type:'get-position'});
+  assert.ok(initial,'widget position requests must be supported before account loading');
+  assert.equal(initial.position,null);
+  await app.call({type:'manual',account:'me',at:Date.now()+100000,text:'保留稿件'});
+  const entries=JSON.stringify(app.state().entries);
+  const saved=await app.call({type:'set-position',position:{x:0.4,y:0.6}});
+  assert.equal(saved.ok,true);assert.equal(JSON.stringify(app.state().entries),entries);
+  assert.equal((await app.call({type:'get-position',account:'other'})).position.x,0.4);
+  assert.equal((await app.call({type:'set-position',position:{x:2,y:0}})).ok,false);
+  assert.equal((await app.call({type:'set-position',position:{x:0,y:NaN}})).ok,false);
+  assert.equal(app.state().position.x,0.4);
 });
 test('late snapshots and mutations cannot roll back newer X changes', async () => {
   const app = setup(), t = Date.now(), at = Date.now() + 100000;

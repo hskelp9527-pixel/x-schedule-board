@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X 发稿安排表",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "记录定时发稿时间，在 X 页面查看安排，并从 X 已加载的定时列表补录。",
   "permissions": [
     "storage"

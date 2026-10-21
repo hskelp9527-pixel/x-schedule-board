@@ -31,7 +31,21 @@ try{
   assert.equal(await page.locator('[data-xsb-record]').count(),0,'no extra record button in X scheduling form');
   assert.equal(await board.locator('form').count(),0,'no manual entry workflow');
   const chip=await board.locator('.launcher').boundingBox();assert(chip.width<=210&&chip.height<=30);
+  // Dragging the chip moves it without opening it, then survives a reload.
+  await page.mouse.move(chip.x+chip.width/2,chip.y+chip.height/2);await page.mouse.down();
+  await page.mouse.move(330,210,{steps:8});await page.mouse.up();
+  const moved=await board.boundingBox();
+  assert.ok(Math.abs(moved.x-chip.x)>100&&Math.abs(moved.y-chip.y)>80,'clock can be dragged away from its fixed corner');
+  assert.equal(await board.locator('.panel').isVisible(),false,'dragging must not act as a click');
+  await worker.evaluate(async()=>{for(let i=0;i<50;i++){if((await chrome.storage.local.get('position')).position)return;await new Promise(resolve=>setTimeout(resolve,20));}throw new Error('position not saved');});
+  await page.reload();
+  await page.waitForFunction(({x,y})=>{const r=document.querySelector('#x-schedule-board')?.getBoundingClientRect();return r&&Math.abs(r.x-x)<2&&Math.abs(r.y-y)<2;},{x:moved.x,y:moved.y});
   await board.locator('.launcher').click();
+  const title=await board.locator('header strong').boundingBox();
+  await page.mouse.move(title.x+title.width/2,title.y+title.height/2);await page.mouse.down();
+  await page.mouse.move(title.x+title.width/2+130,title.y+title.height/2+70,{steps:8});await page.mouse.up();
+  const movedPanel=await board.boundingBox();
+  assert.ok(movedPanel.x>moved.x+100&&movedPanel.y>moved.y+50,'expanded title bar can also be dragged');
   const newTabPromise=context.waitForEvent('page');await board.locator('.refresh').click();
   const listTab=await newTabPromise;
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.status').textContent.includes('已另开 X 列表'));
@@ -65,6 +79,19 @@ try{
   await board.locator('.menu').click();await page.screenshot({path:join(output,'desktop.png')});
   await page.setViewportSize({width:360,height:740});await page.screenshot({path:join(output,'mobile.png')});
   const narrow=await board.locator('.panel').boundingBox();assert(narrow.x>=0&&narrow.x+narrow.width<=361);
+  await board.locator('.close').click();
+  const smallChip=await board.locator('.launcher').boundingBox();
+  await page.mouse.move(smallChip.x+smallChip.width/2,smallChip.y+smallChip.height/2);await page.mouse.down();
+  await page.mouse.move(359,739,{steps:8});await page.mouse.up();
+  const edgeChip=await board.boundingBox();
+  assert.ok(edgeChip.x>=0&&edgeChip.x+edgeChip.width<=360&&edgeChip.y+edgeChip.height<=740,'drag is clamped inside the screen');
+  assert.equal(await board.locator('.panel').isVisible(),false);
+  await board.locator('.launcher').click();
+  const edgePanel=await board.boundingBox();
+  assert.ok(edgePanel.x>=0&&edgePanel.x+edgePanel.width<=360&&edgePanel.y+edgePanel.height<=740,'expanding near a screen edge keeps the panel reachable');
+  await page.setViewportSize({width:360,height:260});
+  await page.waitForFunction(()=>{const r=document.querySelector('#x-schedule-board').getBoundingClientRect();return r.y>=0&&r.bottom<=260;});
+  await page.setViewportSize({width:360,height:740});
   const standalone=await context.newPage();await standalone.goto('https://x.com/compose/post/unsent/scheduled');
   await standalone.waitForFunction(()=>document.querySelector('#x-schedule-board')?.shadowRoot.querySelectorAll('.item').length===1);
   assert.equal(await standalone.locator('[data-testid=AppTabBar_Profile_Link]').count(),0);
@@ -74,5 +101,5 @@ try{
   await page.evaluate(()=>document.querySelector('[data-testid=AppTabBar_Profile_Link]').setAttribute('href','/other'));
   await page.waitForFunction(()=>document.querySelector('#x-schedule-board').shadowRoot.querySelector('.owner').textContent.startsWith('@other'));
   assert.equal(await board.locator('.item').count(),0);assert.equal(await page.locator('[data-testid=tweetTextarea_0]').textContent(),'保留原草稿');
-  assert.deepEqual(errors,[]);console.log('PASS: automatic scheduling capture, tiny closed chip, direct captured GET refresh, failed schedule ignored, cancellation, account isolation, backup and narrow layout.');
+  assert.deepEqual(errors,[]);console.log('PASS: auto-record, GET refresh, failed/cancelled schedules, account isolation, backup, draggable chip/header, saved position and viewport bounds.');
 }finally{await context?.close();await rm(profile,{recursive:true,force:true});}
